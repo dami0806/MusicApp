@@ -10,7 +10,8 @@ import UIKit
 class ViewController: UIViewController {
 
     @IBOutlet weak var musicTableView: UITableView!
-    
+    //서치 컨트롤러 생성 네비게이션 아이템에 할당
+    let searchController = UISearchController()
 
     // 네트워크 매니저 (싱글톤)
     var networkManager = NetworkManager.shared
@@ -21,10 +22,22 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // 셋팅
+        setupSearchBar()
         setupTableView()
         setupDatas()
     }
     
+    //서치바 세팅
+    func setupSearchBar(){
+        self.title = "Music Search"
+        navigationItem.searchController = searchController
+        
+        searchController.searchBar.delegate = self
+        //첫글자 대문자 설정제거
+        searchController.searchBar.autocapitalizationType = .none
+        
+        
+    }
     
     // 테이블뷰 셋팅
     func setupTableView() {
@@ -57,6 +70,30 @@ class ViewController: UIViewController {
         
     }
 
+}
+extension ViewController: UISearchBarDelegate{
+    // 유저가 글자를 입력하는 순간마다 호출되는 메서드
+    func searchBar(_ searchBar:UISearchBar, textDidChange searchText:String){
+    // 1.다시 빈 배열로 만들기
+        self.musicArrays = []
+        
+        //2.네트워킹 시작
+        networkManager.fetchMusic(searchTerm: searchText){result in
+            switch result {
+            case .success(let musicDatas):
+                self.musicArrays = musicDatas
+                DispatchQueue.main.async {
+                    self.musicTableView.reloadData()
+                }
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        }
+    }
+    
+    // MARK: - // 검색(Search) 버튼을 눌렀을때 호출되는 메서드입력
+
+    
 }
 
 extension ViewController: UITableViewDataSource{
