@@ -11,34 +11,74 @@ class ViewController: UIViewController {
 
     @IBOutlet weak var musicTableView: UITableView!
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do any additional setup after loading the view.
-    }
+
     // 네트워크 매니저 (싱글톤)
     var networkManager = NetworkManager.shared
     
     // (음악 데이터를 다루기 위함) 빈배열로 시작
+    var musicArrays: [Music] = []
     
-    
-    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        // 셋팅
+        setupTableView()
+        setupDatas()
+    }
     
     
     // 테이블뷰 셋팅
     func setupTableView() {
-        
+        musicTableView.dataSource = self
+        musicTableView.delegate = self
+        musicTableView.register(UINib(nibName: Cell.musicCellIdentifier, bundle: nil), forCellReuseIdentifier: Cell.musicCellIdentifier) //"MusicCell"대신 Cell구조체 nameSpace 사용
         
     }
     
     // 데이터 셋업
     func setupDatas() {
+        //네트워킹 시작
+        networkManager.fetchMusic(searchTerm: "jazz") { result in
+            switch result {
+            case .success(let musicDatas):
+                //1. 데이터(배열)을 받아오고 난 후
+                self.musicArrays = musicDatas
+                //2. Reload 해야 빈배열에 배열 채워짐
+                DispatchQueue.main.async {
+                    self.musicTableView.reloadData()
+                }
+            case .failure(let error):
+                print(error.localizedDescription)
+                
+            }
+        
+            
+        }
         
         
     }
 
 }
 
-
+extension ViewController: UITableViewDataSource{
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return self.musicArrays.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = musicTableView.dequeueReusableCell(withIdentifier: Cell.musicCellIdentifier, for: indexPath) as! MusicCell
+        //cell 설정
+        cell.imageUrl = musicArrays[indexPath.row].imageUrl
+        cell.songNameLabel.text = musicArrays[indexPath.row].songName
+        cell.albumNameLabel.text = musicArrays[indexPath.row].albumName
+        cell.releaseDateLabel.text = musicArrays[indexPath.row].releaseDateString
+        cell.selectionStyle = .none
+        return cell
+        
+    }
+    
+    
+}
 
 extension ViewController: UITableViewDelegate {
     // 테이블뷰 셀의 높이를 유동적으로 조절하고 싶다면 구현할 수 있는 메서드
